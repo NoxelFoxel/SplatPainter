@@ -47,9 +47,9 @@ namespace SplatPainter.Editor
 		private static readonly int Tex4PropID = Shader.PropertyToID(Tex4PropName);
 		private static readonly int Tex5PropID = Shader.PropertyToID(Tex5PropName);
 
-		private readonly Stack<RenderTexture> _undoStack = new();
+		private readonly Stack<RenderTexture> _undoStack = new Stack<RenderTexture>();
 
-		private readonly Dictionary<PaintChannel, Vector4> _colorTable = new()
+		private readonly Dictionary<PaintChannel, Vector4> _colorTable = new Dictionary<PaintChannel, Vector4>
 		{
 			{ PaintChannel.R, new Vector4(1, 0, 0, 0) },
 			{ PaintChannel.G, new Vector4(0, 1, 0, 0) },
@@ -88,6 +88,8 @@ namespace SplatPainter.Editor
 		private DummyObject _undoDummy;
 		private SerializedObject _dummySerializedObject;
 		private SerializedProperty _dummyProp;
+		private Vector2 _hitTextureCoord;
+		private bool _needToPaint;
 
 
 		[MenuItem("Tools/Splat Painter")]
@@ -133,6 +135,15 @@ namespace SplatPainter.Editor
 			StrokeBegun += OnBrushStrokeBegun;
 			StrokeEnded += OnBrushStrokeEnded;
 			_initialized = true;
+		}
+
+		private void Update()
+		{
+			if (_needToPaint)
+			{
+				Paint(_hitTextureCoord, _brushSize);
+				_needToPaint = false;
+			}
 		}
 
 		private void OnDestroy()
@@ -282,6 +293,11 @@ namespace SplatPainter.Editor
 
 		private void HandlePainting()
 		{
+			if (Event.current == null)
+			{
+				return;
+			}
+
 			Ray ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
 
 			if (_collider.Raycast(ray, out RaycastHit hit, float.MaxValue) == false)
@@ -315,7 +331,8 @@ namespace SplatPainter.Editor
 			}
 
 			_lastPaintPosition = hit.textureCoord * _biggestDimension;
-			Paint(hit.textureCoord, _brushSize);
+			_hitTextureCoord = hit.textureCoord;
+			_needToPaint = true;
 		}
 
 		private void TrySetActiveObject(GameObject gameObject)
@@ -389,11 +406,11 @@ namespace SplatPainter.Editor
 			_splatTextures[3] = material.GetTexture(Tex4PropID);
 			_splatTextures[4] = material.GetTexture(Tex5PropID);
 
-			Material blitMaterial = new(Shader.Find(HiddenBlitCopyIgnoreAlphaShaderName));
+			Material blitMaterial = new Material(Shader.Find(HiddenBlitCopyIgnoreAlphaShaderName));
 
 			for (int i = 0; i < _splatTextures.Length; i++)
 			{
-				RenderTexture newTexture = new(256, 256, 0);
+				RenderTexture newTexture = new RenderTexture(256, 256, 0);
 				Graphics.Blit(_splatTextures[i], newTexture, blitMaterial);
 				_splatTextures[i] = newTexture;
 			}
@@ -421,7 +438,9 @@ namespace SplatPainter.Editor
 
 			try
 			{
-				Texture2D texture = new(_texture.width, _texture.height, GraphicsFormat.R16G16B16A16_UNorm, 0, TextureCreationFlags.None);
+				Texture2D texture = new Texture2D
+					(_texture.width, _texture.height, GraphicsFormat.R32G32B32A32_SFloat, 0, TextureCreationFlags.None);
+
 				RenderTexture.active = _texture;
 				texture.ReadPixels(new Rect(0, 0, _texture.width, _texture.height), 0, 0, false);
 				RenderTexture.active = null;
@@ -487,7 +506,7 @@ namespace SplatPainter.Editor
 
 		private void SaveStateForUndo(RenderTexture texture)
 		{
-			RenderTexture temp = new(texture.width, texture.height, 0);
+			RenderTexture temp = new RenderTexture(texture.width, texture.height, 0);
 			Graphics.Blit(texture, temp);
 			_undoStack.Push(temp);
 		}

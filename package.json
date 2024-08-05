@@ -1,9 +1,9 @@
 {
   "name": "com.noxelfoxel.splatpainter",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "displayName": "Splat Painter",
   "description": "Allows you to paint splat maps in Editor",
-  "unity": "2021.0",
+  "unity": "2020.3",
   "dependencies": {
 
   },
