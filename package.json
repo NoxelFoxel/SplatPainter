@@ -1,0 +1,15 @@
+{
+  "name": "com.noxelfoxel.splatpainter",
+  "version": "1.0.0",
+  "displayName": "Splat Painter",
+  "description": "Allows you to paint splat maps in Editor",
+  "unity": "2021.0",
+  "dependencies": {
+
+  },
+  "author": {
+    "name": "Noxel Foxel",
+    "email": "noxelfoxel@gmail.com",
+    "url": "https://github.com/NoxelFoxel"
+  }
+}
